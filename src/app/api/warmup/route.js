@@ -3,32 +3,47 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
 
-// Helper: Directly read and parse .env.local safely
+// Helper: Read mailboxes from Vercel Env variables or fallback to local .env.local reader
 const getMailboxes = () => {
   const boxes = [];
   try {
-    const envPath = path.join(process.cwd(), '.env.local');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const lines = envContent.split('\n');
+    // 1. Pehle Vercel / Live Environment Variables check karega
+    for (let i = 1; i <= 15; i++) {
+      const user = process.env[`MAIL_${i}_USER`];
+      const pass = process.env[`MAIL_${i}_PASS`];
 
-      for (let i = 1; i <= 15; i++) {
-        const userLine = lines.find(l => l.trim().startsWith(`MAIL_${i}_USER=`));
-        const passLine = lines.find(l => l.trim().startsWith(`MAIL_${i}_PASS=`));
+      if (user && pass && !user.startsWith('#')) {
+        boxes.push({ user: user.trim(), pass: pass.trim() });
+      }
+    }
 
-        if (userLine && passLine) {
-          let user = userLine.split('=')[1]?.trim().replace(/^['"]|['"]$/g, '');
-          let pass = passLine.split('=')[1]?.trim().replace(/^['"]|['"]$/g, '');
+    // 2. Agar Vercel env mein nahi mile toh local .env.local file padhega (Localhost ke liye)
+    if (boxes.length === 0) {
+      const envPath = path.join(process.cwd(), '.env.local');
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const lines = envContent.split('\n');
 
-          if (user && pass && !user.startsWith('#')) {
-            boxes.push({ user, pass });
+        for (let i = 1; i <= 15; i++) {
+          const userLine = lines.find(l => l.trim().startsWith(`MAIL_${i}_USER=`));
+          const passLine = lines.find(l => l.trim().startsWith(`MAIL_${i}_PASS=`));
+
+          if (userLine && passLine) {
+            let user = userLine.split('=')[1]?.trim().replace(/^['"]|['"]$/g, '');
+            let pass = passLine.split('=')[1]?.trim().replace(/^['"]|['"]$/g, '');
+
+            if (user && pass && !user.startsWith('#')) {
+              boxes.push({ user, pass });
+            }
           }
         }
       }
     }
   } catch (err) {
-    console.error("Error reading .env.local directly:", err);
+    console.error("Error loading mailboxes:", err);
   }
+
+  console.log(`Total Successfully Loaded Mailboxes: ${boxes.length}`);
   return boxes;
 };
 
