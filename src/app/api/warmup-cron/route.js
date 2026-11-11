@@ -10,13 +10,19 @@ export async function GET(request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Predefined 16 target Gmail addresses for automated rotation & warmup
+    // Exact tere dwara diye gaye 11 target Gmail addresses
     const targetRecipients = [
-      'dileshwarlahre806@gmail.com', 'un30151@gmail.com', 'cginfrax@gmail.com',
-      'dhhj9695@gmail.com', 'stonenox82@gmail.com', 'bspcontinental01@gmail.com',
-      'bspccontinental@gmail.com', 'alex.stonenoxtech@gmail.com', 'ryan.stonenoxtech@gmail.com',
-      'david.stonenoxtech@gmail.com', 'lucas.stonenoxtech@gmail.com', 'sam.stonenoxtech@gmail.com',
-      'leo.stonenoxtech@gmail.com', 'max.stonenoxtech@gmail.com', 'noah.stonenoxtech@gmail.com', 'jack.stonenoxtech@gmail.com'
+      'un30151@gmail.com',
+      'dhhj9695@gmail.com',
+      'stonenox82@gmail.com',
+      'alex.stonenoxtech@gmail.com',
+      'ryan.stonenoxtech@gmail.com',
+      'david.stonenoxtech@gmail.com',
+      'lucas.stonenoxtech@gmail.com',
+      'leo.stonenoxtech@gmail.com',
+      'max.stonenoxtech@gmail.com',
+      'noah.stonenoxtech@gmail.com',
+      'jack.stonenoxtech@gmail.com'
     ];
 
     // Trigger internal main /api/warmup POST endpoint securely
