@@ -43,7 +43,7 @@ const getMailboxes = () => {
   return boxes;
 };
 
-// Exact 11 Target Gmails (No extra emails)
+// Exact 11 Target Gmails (Strict Sequential Rotation)
 const STRICT_TARGET_RECIPENTS = [
   'un30151@gmail.com',
   'dhhj9695@gmail.com',
@@ -143,6 +143,15 @@ const bodiesPool = [
 
 const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// Robust Counter using 30-minute intervals (since cron hits every 30 mins)
+// Ye bina kisi file ke har 30 min block par strictly 0, 1, 2, 3... index aage badhayega!
+const getDeterministicIndexes = (totalMailboxes, totalTargets) => {
+  const thirtyMinuteBlocks = Math.floor(Date.now() / (1000 * 60 * 30));
+  const boxIdx = thirtyMinuteBlocks % totalMailboxes;
+  const targetIdx = (thirtyMinuteBlocks * 7) % totalTargets; // multiplier 7 ensures targets mix up nicely without colliding
+  return { boxIdx, targetIdx };
+};
+
 export async function POST(request) {
   try {
     const bodyData = await request.json().catch(() => ({}));
@@ -155,13 +164,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'CRITICAL: 0 mailboxes loaded!' }, { status: 500 });
     }
 
-    // Dynamic Single Index calculation: Har execution (minute base) par bilkul 1 alag combination
-    const nowIndex = Math.floor(Date.now() / (1000 * 60));
-    const boxIndex = nowIndex % mailboxes.length;
-    const targetIndex = (nowIndex * 3) % targetRecipients.length;
+    const { boxIdx, targetIdx } = getDeterministicIndexes(mailboxes.length, targetRecipients.length);
 
-    const currentBox = mailboxes[boxIndex];
-    const targetRecipient = targetRecipients[targetIndex];
+    const currentBox = mailboxes[boxIdx];
+    const targetRecipient = targetRecipients[targetIdx];
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.hostinger.com',
@@ -178,7 +184,6 @@ export async function POST(request) {
     const finalSubject = getRandomItem(subjectsPool);
     const finalMessage = getRandomItem(bodiesPool);
 
-    // Exact 1 email execution
     const info = await transporter.sendMail({
       from: `"Stonenox Outreach" <${currentBox.user}>`,
       to: targetRecipient,
@@ -191,6 +196,8 @@ export async function POST(request) {
       sentFrom: currentBox.user,
       sentTo: targetRecipient,
       subject: finalSubject,
+      boxIndex: boxIdx + 1,
+      targetIndex: targetIdx + 1,
       response: info.response,
       timestamp: new Date().toLocaleTimeString()
     });
