@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/warmup-cron",
-      "schedule": "0 */3 * * *"
-    }
-  ]
-}

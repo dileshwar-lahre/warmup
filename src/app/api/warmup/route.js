@@ -29,12 +29,9 @@ const getMailboxes = () => {
   } catch (err) {
     console.error("Error reading .env.local directly:", err);
   }
-
-  console.log(`Total Successfully Loaded Mailboxes via Direct Reader: ${boxes.length}`);
   return boxes;
 };
 
-// Delay generator (Minutes to Milliseconds)
 const getRandomDelay = (minMin, maxMin) => {
   const minMs = minMin * 60 * 1000;
   const maxMs = maxMin * 60 * 1000;
@@ -43,7 +40,7 @@ const getRandomDelay = (minMin, maxMin) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Complete 50 Massive Rotational Subject Lines Pool
+// Full 50+ Subject Lines Pool
 const subjectsPool = [
   "Quick question regarding your website",
   "Checking in on your latest project update",
@@ -97,7 +94,7 @@ const subjectsPool = [
   "Exploring future technical synergies"
 ];
 
-// Complete 50 Massive Rotational Email Bodies Pool
+// Full 50+ Message Bodies Pool
 const bodiesPool = [
   "Hi there, I was browsing through your platform and wanted to check if you are looking to optimize your performance metrics this quarter.",
   "Hello, just dropping a quick note to see how your current engineering workflow is holding up. Would love to connect briefly.",
@@ -170,12 +167,8 @@ export async function POST(request) {
     }
 
     const mailboxes = getMailboxes();
-    
     if (mailboxes.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'CRITICAL: 0 mailboxes loaded!' 
-      }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'CRITICAL: 0 mailboxes loaded!' }, { status: 500 });
     }
 
     let results = [];
@@ -187,11 +180,7 @@ export async function POST(request) {
       let activeMailboxes = mailboxes.filter(b => !deadMailboxes.has(b.user));
 
       if (activeMailboxes.length === 0) {
-        results.push({
-          email: recipient,
-          status: 'Failed',
-          error: 'All mailboxes are exhausted or dead.'
-        });
+        results.push({ email: recipient, status: 'Failed', error: 'All mailboxes exhausted.' });
         break;
       }
 
@@ -216,9 +205,7 @@ export async function POST(request) {
           user: currentBox.user,
           pass: currentBox.pass,
         },
-        tls: {
-          rejectUnauthorized: false
-        }
+        tls: { rejectUnauthorized: false }
       });
 
       const finalSubject = customSubject?.trim() ? customSubject : getRandomItem(subjectsPool);
@@ -245,12 +232,9 @@ export async function POST(request) {
         });
       } catch (err) {
         console.error(`SMTP Error on ${currentBox.user}:`, err.message);
-        
-        if (err.message.includes('535') || err.message.includes('Authentication') || err.message.includes('Invalid login')) {
+        if (err.message.includes('535') || err.message.includes('Authentication')) {
           deadMailboxes.add(currentBox.user);
-          console.warn(`[Auto-Shield] Bypassing dead/failing mailbox: ${currentBox.user}`);
         }
-
         results.push({
           email: recipient,
           status: 'Failed',
