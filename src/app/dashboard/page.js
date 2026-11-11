@@ -5,13 +5,9 @@ import { Mail, Send, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, Sliders,
 
 export default function Dashboard() {
   const initialEmails = [
-    'dileshwarlahre806@gmail.com',
     'un30151@gmail.com',
-    'cginfrax@gmail.com',
     'dhhj9695@gmail.com',
     'stonenox82@gmail.com',
-    'bspcontinental01@gmail.com',
-    'bspccontinental@gmail.com',
     'alex.stonenoxtech@gmail.com',
     'ryan.stonenoxtech@gmail.com',
     'david.stonenoxtech@gmail.com',
