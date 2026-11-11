@@ -5,12 +5,10 @@ export async function GET(request) {
     const url = new URL(request.url);
     const secret = url.searchParams.get('secret');
 
-    // Security check taaki koi aur tera URL misuse na kar sake
     if (secret !== 'stonenox_secure_warmup_2026') {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Exact tere dwara diye gaye 11 target Gmail addresses
     const targetRecipients = [
       'un30151@gmail.com',
       'dhhj9695@gmail.com',
@@ -25,7 +23,6 @@ export async function GET(request) {
       'jack.stonenoxtech@gmail.com'
     ];
 
-    // Trigger internal main /api/warmup POST endpoint securely
     const response = await fetch(`${url.origin}/api/warmup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,7 +30,7 @@ export async function GET(request) {
     });
 
     const data = await response.json();
-    return NextResponse.json({ success: true, message: 'Autopilot cron batch triggered successfully!', data });
+    return NextResponse.json({ success: true, message: 'Single email warm-up triggered', data });
 
   } catch (error) {
     console.error("CRON TRIGGER ERROR:", error);

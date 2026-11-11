@@ -43,6 +43,21 @@ const getMailboxes = () => {
   return boxes;
 };
 
+// Exact 11 Target Gmails (No extra emails)
+const STRICT_TARGET_RECIPENTS = [
+  'un30151@gmail.com',
+  'dhhj9695@gmail.com',
+  'stonenox82@gmail.com',
+  'alex.stonenoxtech@gmail.com',
+  'ryan.stonenoxtech@gmail.com',
+  'david.stonenoxtech@gmail.com',
+  'lucas.stonenoxtech@gmail.com',
+  'leo.stonenoxtech@gmail.com',
+  'max.stonenoxtech@gmail.com',
+  'noah.stonenoxtech@gmail.com',
+  'jack.stonenoxtech@gmail.com'
+];
+
 // 50+ Unique Subject Lines Pool
 const subjectsPool = [
   "Quick question regarding your website", "Checking in on your latest project update",
@@ -127,92 +142,61 @@ const bodiesPool = [
 ];
 
 const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function POST(request) {
   try {
+    const bodyData = await request.json().catch(() => ({}));
+    const targetRecipients = (bodyData.recipients && bodyData.recipients.length > 0) 
+      ? bodyData.recipients 
+      : STRICT_TARGET_RECIPENTS;
+
     const mailboxes = getMailboxes();
     if (mailboxes.length === 0) {
       return NextResponse.json({ success: false, error: 'CRITICAL: 0 mailboxes loaded!' }, { status: 500 });
     }
 
-    const targetRecipients = [
-      'dileshwarlahre806@gmail.com', 'un30151@gmail.com', 'cginfrax@gmail.com',
-      'dhhj9695@gmail.com', 'stonenox82@gmail.com', 'bspcontinental01@gmail.com',
-      'bspccontinental@gmail.com', 'alex.stonenoxtech@gmail.com', 'ryan.stonenoxtech@gmail.com',
-      'david.stonenoxtech@gmail.com', 'lucas.stonenoxtech@gmail.com', 'sam.stonenoxtech@gmail.com',
-      'leo.stonenoxtech@gmail.com', 'max.stonenoxtech@gmail.com', 'noah.stonenoxtech@gmail.com', 'jack.stonenoxtech@gmail.com'
-    ];
+    // Dynamic Single Index calculation: Har execution (minute base) par bilkul 1 alag combination
+    const nowIndex = Math.floor(Date.now() / (1000 * 60));
+    const boxIndex = nowIndex % mailboxes.length;
+    const targetIndex = (nowIndex * 3) % targetRecipients.length;
 
-    // 🔥 FOOLPROOF ROTATION OFFSET: Har minute / hit ke sath index badlega taaki kabhi same box repeat na ho!
-    const uniqueCounter = Date.now();
-    const boxStartIndex = Math.floor(uniqueCounter / 1000) % mailboxes.length;
-    const targetStartIndex = Math.floor(uniqueCounter / 2000) % targetRecipients.length;
+    const currentBox = mailboxes[boxIndex];
+    const targetRecipient = targetRecipients[targetIndex];
 
-    let results = [];
-    // Ek hit mein 3 se 4 mailboxes use honge taaki spam risk zero rahe aur rotation smoothly chalti rahe
-    const batchSize = Math.min(4, mailboxes.length);
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: {
+        user: currentBox.user,
+        pass: currentBox.pass,
+      },
+      tls: { rejectUnauthorized: false }
+    });
 
-    for (let i = 0; i < batchSize; i++) {
-      const boxIndex = (boxStartIndex + i) % mailboxes.length;
-      const targetIndex = (targetStartIndex + i * 3) % targetRecipients.length;
+    const finalSubject = getRandomItem(subjectsPool);
+    const finalMessage = getRandomItem(bodiesPool);
 
-      const currentBox = mailboxes[boxIndex];
-      const targetRecipient = targetRecipients[targetIndex];
-
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.hostinger.com',
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        auth: {
-          user: currentBox.user,
-          pass: currentBox.pass,
-        },
-        tls: { rejectUnauthorized: false }
-      });
-
-      const finalSubject = getRandomItem(subjectsPool);
-      const finalMessage = getRandomItem(bodiesPool);
-
-      try {
-        const info = await transporter.sendMail({
-          from: `"Stonenox Outreach" <${currentBox.user}>`,
-          to: targetRecipient,
-          subject: finalSubject,
-          text: finalMessage,
-        });
-
-        results.push({
-          status: 'Success',
-          sentFrom: currentBox.user,
-          sentTo: targetRecipient,
-          subject: finalSubject,
-          response: info.response,
-          time: new Date().toLocaleTimeString()
-        });
-      } catch (err) {
-        results.push({
-          status: 'Failed',
-          sentFrom: currentBox.user,
-          sentTo: targetRecipient,
-          error: err.message
-        });
-      }
-
-      // Har mail ke beech 2 second ka gap taaki SMTP server par load na aaye
-      if (i < batchSize - 1) {
-        await sleep(2000);
-      }
-    }
+    // Exact 1 email execution
+    const info = await transporter.sendMail({
+      from: `"Stonenox Outreach" <${currentBox.user}>`,
+      to: targetRecipient,
+      subject: finalSubject,
+      text: finalMessage,
+    });
 
     return NextResponse.json({ 
       success: true, 
-      batchProcessed: results.length,
-      results 
+      sentFrom: currentBox.user,
+      sentTo: targetRecipient,
+      subject: finalSubject,
+      response: info.response,
+      timestamp: new Date().toLocaleTimeString()
     });
 
   } catch (error) {
+    console.error("WARMUP ERROR:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
